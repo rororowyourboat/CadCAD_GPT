@@ -9,14 +9,18 @@ import pandas as pd
 
 class CadCAD_GPT:
     def __init__(self, model: Model, simulation: Simulation, experiment: Experiment, docs: str, api_key: str):
+        """initializing the cadcad_gpt object using radcad model, simulation and experiment objects, documentation of the model and openai api key"""
         self.model = model
         self.simulation = simulation
         self.experiment = experiment
         self.docs = docs
         self.api_key = api_key
         self.df = pd.DataFrame(self.experiment.run())
+        #create toolkit object
         self.toolkit = Toolkit(self.model, self.simulation, self.experiment, self.df)
+        #bring the function schema list from toolkit for agents to use
         self.function_list = self.toolkit.function_list
+        #create planner and executor agents
         self.planner_agent = PlannerAgent(self.function_list, self.api_key)
         self.executor_agent = ExecutorAgent(self.df, self.function_list, self.api_key)
         

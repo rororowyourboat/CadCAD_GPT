@@ -1,9 +1,19 @@
 from radcad import Model, Simulation, Experiment, Engine
 import pandas as pd
 from pydantic import create_model
-import inspect, json
+import inspect
 from inspect import Parameter
-
+import plotly.express as px
+#analysis agent imports
+from langchain.agents import create_pandas_dataframe_agent
+from langchain.chat_models import ChatOpenAI
+from langchain.agents.agent_types import AgentType
+#vector database documentation agent imports
+from langchain.prompts import ChatPromptTemplate
+from langchain.vectorstores import FAISS
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.schema.output_parser import StrOutputParser
 
 class Toolkit:
     def __init__(self, model:Model, simulation:Simulation, experiment:Experiment, df:pd.DataFrame):
@@ -11,74 +21,16 @@ class Toolkit:
         self.simulation = simulation
         self.experiment = experiment
         self.df = df
-        self.function_list = [
-        {
-            "name": "change_param",
-            "description": "Changes the parameter of the cadcad simulation and returns dataframe as a global object. The parameter must be in this list:" + str(model.params.keys()),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "param": {
-                        "type": "string",
-                        "description": "parameter to change. choose from the list" + str(self.model.params.keys()),
-                    },
-                    "value": {
-                        "type": "string",
-                        "description": "value to change the parameter to, eg. 0.1",
-                    },
-                },
-                "required": ["param", "value"],
-            },
-        },
-        {
-            "name": "model_info",
-            "description": "quantitative values of current state of the simulation parameters. If no param is specified the argument should be 'all'",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "param": {
-                        "type": "string",
-                        "description": "type of information to print. choose from the list: " + str(self.model.params.keys()),
-                    },
-                },
-                "required": ["param"],
-            },
-        },
-        {
-            "name": "analyze_dataframe",
-            "description": "Use this whenever a quantitative question is asked about the dataframe. The question should be taken exactly as asked by the user",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "question": {
-                        "type": "string",
-                        "description": "The question asked by user that can be answered by an LLM dataframe agent",
-                    },
-                },
-                "required": ["question"],
-            },
-        },
-        {
-            "name": "model_documentation",
-            "description": "use when asked about documentation of the model has information about what the model is, assumptions made, mathematical specs, differential model specs etc.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "question": {
-                        "type": "string",
-                        "description": "The question asked by user that can be answered by an LLM dataframe agent",
-                    },
-                },
-                "required": ["question"],
-            },
-        }
-    ]
+        self.function_list = [self.schema(f) for f in [self.change_param, self.model_info, self.analyze_dataframe, self.model_documentation, self.plotter]]
 
-    def schema(f):
+    # schema extractor takes a function and returns a json schema including name, description and parameters for openai function calling
+    def schema(self,f):
         kw = {n:(o.annotation, ... if o.default==Parameter.empty else o.default)
             for n,o in inspect.signature(f).parameters.items()}
         s = create_model(f'Input for `{f.__name__}`', **kw).schema()
         return dict(name=f.__name__, description=f.__doc__, parameters=s)
+    
+    # tools as functions
 
     def change_param(self, param:str, value:float)->str:
         '''Changes the parameter of the cadcad simulation and returns dataframe as a global object. The parameter must be in this list:'''
@@ -107,15 +59,41 @@ class Toolkit:
 
     # pandas agent as a tool
 
-    
-    def analyze_dataframe(self, question:str)->str:
-        '''Use this whenever a quantitative question is asked about the dataframe. The question should be taken exactly as asked by the user'''
-        # Implement your logic here to analyze the dataframe based on the user's question
-        return question
-    
-    def model_documentation(self, question:str)->str:
-        '''use when asked about documentation of the model has information about what the model is, assumptions made, mathematical specs, differential model specs etc.'''
-        # Implement your logic here to provide documentation based on the user's question
-        return question
+    def analyze_dataframe(self,question:str)->str:
+        '''Analyzes the dataframe and returns the answer to the question'''
+        # pandas_agent = agent = create_pandas_dataframe_agent(OpenAI(temperature=0), df, verbose=True)
+        pandas_agent = create_pandas_dataframe_agent(ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0613"),
+        self.df,
+        verbose=True,
+        agent_type=AgentType.OPENAI_FUNCTIONS,
+        )
+        answer = pandas_agent.run(question)
+        
+        return answer
 
+    def model_documentation(self,question:str)->str:
+        '''Returns the documentation of the model'''
+        vectorstore = FAISS.from_texts([self.docs], embedding=OpenAIEmbeddings())
+        retriever = vectorstore.as_retriever()
 
+        template = """Answer the question based only on the following context:
+        {context}
+
+        Question: {question}
+        """
+        prompt = ChatPromptTemplate.from_template(template)
+        model = ChatOpenAI()
+        chain = (
+            {"context": retriever, "question": RunnablePassthrough()} 
+            | prompt 
+            | model 
+            | StrOutputParser()
+        )
+        info = chain.invoke(question)
+
+        return info
+
+    def plotter(self,column_name:str)->str:
+        '''Plots the column from the dataframe'''
+        fig = px.line(self.df, x="timestep", y=[column_name])
+        fig.show()
