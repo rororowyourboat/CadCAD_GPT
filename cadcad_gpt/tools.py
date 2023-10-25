@@ -33,7 +33,7 @@ class Toolkit:
     # tools as functions
 
     def change_param(self, param:str, value:float)->str:
-        '''Changes the parameter of the cadcad simulation and returns dataframe as a global object. The parameter must be in this list:'''
+        f'''Changes the parameter of the cadcad simulation and returns dataframe as a global object. The parameter must be in this list: {self.model.params}'''
         if param not in self.model.params:
             return f'{param} is not a parameter of the model'
         value = float(value)
@@ -61,7 +61,6 @@ class Toolkit:
 
     def analyze_dataframe(self,question:str)->str:
         '''Analyzes the dataframe and returns the answer to the question'''
-        # pandas_agent = agent = create_pandas_dataframe_agent(OpenAI(temperature=0), df, verbose=True)
         pandas_agent = create_pandas_dataframe_agent(ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0613"),
         self.df,
         verbose=True,
@@ -97,3 +96,4 @@ class Toolkit:
         '''Plots the column from the dataframe'''
         fig = px.line(self.df, x="timestep", y=[column_name])
         fig.show()
+        

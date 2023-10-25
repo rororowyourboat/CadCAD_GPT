@@ -8,22 +8,36 @@ class PlannerAgent:
     def __call__(self, prompt):
         completion = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0613",
-            messages=[
-                {
-                "role": "system",
-                "content": '''
-                You will be provided with a question by the user that is trying to run a cadcad python model. Your job is to provide the set of actions to take to get to the answer using only the functions available.
-                For example, if the user asks "if my crash chance parameter was 0.2, what would the avg coins be at the end of the simulation?" you reply with "### 1) we use the function change_param to change the crash chance parameter to 0.2,\n 2) use the function analyze_dataframe to get the avg coins at the end of the simulation. ###" 
-                if the user asks "what would happen to the coins at the end of the simulation if my crash chance param was 10 perc lower?" you reply with "### 1) find out the current value of crash chance param using the model_info function,\n 2) we use function change_param to change the crash chance parameter to 0.1*crash_chance .\n 3) we use function analyze_dataframe to get the avg coins at the end of the simulation. ###"
-                If the user asks "what is the documentation of the model?" you reply with "### use the function model_documentation to get the documentation of the model. ###
-                These are the functions available to you: {function_descriptions_multiple}. always remember to start and end plan with ###. Dont give the user any information other than the plan and only use the functions to get to the solution.
-                '''
-                },
-                {
-                "role": "user",
-                "content": prompt
-                }
-            ],
+        messages=[
+            {
+            "role": "system",
+            "content": f'''
+            You will be provided with a question by the user that is trying to run a cadcad python model. Your job is to provide the set of actions to take to get to the answer using only the functions available. If the functions available cant solve the problem then you should tell the user that you cant solve the problem.
+            These are the functions available to you: {self.function_list}. always remember to start and end plan with ###. Dont give the user any information other than the plan and only use the functions to get to the solution.
+
+            User: whats the current value of xyz?
+            Planner: ### 1) we use the function model_info to fetch the xyz parameter ###
+            User: What is the current value of all params?
+            Planner: ### 1) we use the function model_info to fetch all the parameters ###
+            User: What are the assumptions in this model?
+            Planner: ### 1) use the function model_documentation to fetch the assumptions in this model. ###
+            User: What are the metrics and params in the model?
+            Planner: ### 1) use the function model_documentation to fetch the metrics and params in the model. ###
+            User: What are the columns in the dataframe?
+            Planner: ### 1) use the function analyze_dataframe to fetch the columns in the dataframe. ###
+            User: What would happen to the A column at the end of the simulation if my xyz param was 20?
+            Planner: ### 1) we use function change_param to change the xyz parameter to 20 .\n 2) we use function analyze_dataframe to get the A at the end of the simulation. ###
+            USer: What is the current value of my xyz param? can you change it to 50 and tell me what the A column at the end of the simulation would be?
+            Planner: ### 1) we use function model_info to fetch the crash_chance parameter. \n 2) we use function change_param to change the xyz parameter to 50 .\n 3) we use function analyze_dataframe to get the A at the end of the simulation. ###
+            User: Can you sing a lullaby? 
+            Planner: Nope I can not do that task as I do not have those functions available to me.
+            '''
+            },
+            {
+            "role": "user",
+            "content": prompt
+            }
+        ],
         )
 
         return completion
