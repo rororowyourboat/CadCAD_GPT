@@ -21,19 +21,26 @@ class Toolkit:
         self.simulation = simulation
         self.experiment = experiment
         self.df = df
-        self.function_list = [self.schema(f) for f in [self.change_param, self.model_info, self.analyze_dataframe, self.model_documentation, self.plotter]]
+        self.function_list =  [self.schema(f) for f in self.parse_functions()]  
 
-    # schema extractor takes a function and returns a json schema including name, description and parameters for openai function calling
+
     def schema(self,f):
-        kw = {n:(o.annotation, ... if o.default==Parameter.empty else o.default)
+        kw = {n:(o.annotation, ... if o.default==inspect.Parameter.empty else o.default)
             for n,o in inspect.signature(f).parameters.items()}
         s = create_model(f'Input for `{f.__name__}`', **kw).schema()
         return dict(name=f.__name__, description=f.__doc__, parameters=s)
+
+    def parse_functions(self):
+        parsed_functions = [getattr(self, method_name) for method_name in dir(self)
+                            if callable(getattr(self, method_name))
+                            and not method_name.startswith('__')
+                            and method_name not in ('schema', 'parse_functions', 'model')]
+        return parsed_functions
     
     # tools as functions
 
     def change_param(self, param:str, value:float)->str:
-        f'''Changes the parameter of the cadcad simulation and returns dataframe as a global object. The parameter must be in this list: {self.model.params}'''
+        '''Changes the parameter of the cadcad simulation and runs the simulation to update dataframe. '''
         if param not in self.model.params:
             return f'{param} is not a parameter of the model'
         value = float(value)
@@ -96,4 +103,4 @@ class Toolkit:
         '''Plots the column from the dataframe'''
         fig = px.line(self.df, x="timestep", y=[column_name])
         fig.show()
-        
+

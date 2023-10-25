@@ -47,9 +47,9 @@ class PlannerAgent:
 
 
 class ExecutorAgent:
-    def __init__(self, df, function_descriptions_multiple, api_key):
+    def __init__(self, df, function_list, api_key):
         self.df = df
-        self.function_descriptions_multiple = function_descriptions_multiple
+        self.function_list = function_list
         self.api_key = api_key
 
     def __call__(self, prompt):
@@ -57,7 +57,7 @@ class ExecutorAgent:
             model="gpt-3.5-turbo-0613",
             messages=[{"role": "user", "content": prompt}],
             # add function calling
-            functions=self.function_descriptions_multiple,
+            functions=self.function_list,
             function_call="auto",  # specify the function call
         )
         return completion

@@ -45,6 +45,7 @@ class CadCAD_GPT:
             print('Thought: My task is to', plan)
             #send plan to executor agent
             message = self.executor_agent(plan).choices[0].message
+
             #if message.content is None then it means the executor agent has called a function
             if (message.content==None):
                 function_name = message['function_call']['name']
