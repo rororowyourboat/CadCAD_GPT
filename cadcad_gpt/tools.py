@@ -104,3 +104,9 @@ class Toolkit:
         fig = px.line(self.df, x="timestep", y=[column_name])
         fig.show()
 
+    def A_B_test(self, a:str,b:str)->str:
+        """this does an A_b test"""
+        #code to do it.
+        return f'{a} the test is done'
+    
+
