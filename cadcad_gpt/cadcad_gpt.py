@@ -6,58 +6,104 @@ from tools import Toolkit
 import json
 import pandas as pd
 
-
 class CadCAD_GPT:
     def __init__(self, model: Model, simulation: Simulation, experiment: Experiment, docs: str, api_key: str):
-        """initializing the cadcad_gpt object using radcad model, simulation and experiment objects, documentation of the model and openai api key"""
+        """
+        Class initialization function.
+
+        Parameters:
+        model (Model): RadCAD model object
+        simulation (Simulation): RadCAD simulation object
+        experiment (Experiment): RadCAD experiment object
+        docs (str): Documentation for the model, as a string
+        api_key (str): OpenAI API key
+        """
         self.model = model
         self.simulation = simulation
         self.experiment = experiment
         self.docs = docs
         self.api_key = api_key
         self.df = pd.DataFrame(self.experiment.run())
-        #create toolkit object
+
+        # Create a Toolkit object
         self.toolkit = Toolkit(self.model, self.simulation, self.experiment, self.df)
-        #bring the function schema list from toolkit for agents to use
-        self.function_list = self.toolkit.function_list
-        #create planner and executor agents
-        self.planner_agent = PlannerAgent(self.function_list, self.api_key)
-        self.executor_agent = ExecutorAgent(self.df, self.function_list, self.api_key)
-        
+
+        # Extract function schema list from toolkit for subsequent agent usage
+        self.function_schemas = self.toolkit.function_schemas
+        self.function_name_descriptions = [(function['name'],function['description'].split('\n')[1]) for function in self.function_schemas]
+
+        # Create Planner and Executor agent
+        self.planner_agent = PlannerAgent(self.function_name_descriptions, self.api_key)
+        self.executor_agent = ExecutorAgent(self.df, self.function_schemas,  self.model.params.keys() ,self.api_key)
 
     def __call__(self, user_input: str):
-        #send user input to planner agent
+        """
+        Function to process user input, create plans and execute them
+        using planner and executor agents.
+
+        Parameters:
+        user_input (str): command or input from the user
+
+        Returns:
+        str: reply from the agent, after processing user input and executing tasks
+        """
+
+        # Pass user input to planner agent
         reply = self.planner_agent(user_input).choices[0].message.content
+        
+        # Parse agent's reply into a plan
         plan_list = plan_parser(reply)
-        #if there is no plan then return the response from the planner agent
+
+        # If there's no plan, return the agent's reply
         if plan_list == []:
             return reply
-        
-        #if plan_list is not empty then print the plan and pass it one by one to the executor agent
+
+        # If there are plans, they are printed and executed one by one
         print_color("Planner Agent:", "32")
         print('I have made a plan to follow:')
+        i=0
         for plan in plan_list:
-            print(plan)
+            i+=1
+            print(plan,i)
         print('\n')
 
-        for plan in plan_list:
-            print_color("Executor Agent:", "31")
-            print('Thought: My task is to', plan)
-            #send plan to executor agent
-            message = self.executor_agent(plan).choices[0].message
+        print('plan_list: ', plan_list)
 
-            #if message.content is None then it means the executor agent has called a function
+        # Clear old chat history of executor agent
+        self.executor_agent.delete_all_messages()
+
+        # Execute plans one by one
+        for plan in plan_list:
+            self.executor_agent.add_message({"role": "user", "content": plan})
+
+            print_color("Executor Agent:", "31")
+            thought = 'Thought: My task is to ' + str(plan)
+            print(thought)
+            
+            #Send plan to executor agent
+            message = self.executor_agent(plan).choices[0].message
+            # print(message)
+
+            # Else If message.content is None, executor agent has made a function call
             if (message.content==None):
                 function_name = message['function_call']['name']
                 function_args = json.loads(message['function_call']['arguments'])
-                print('Action: I should call', function_name, 'function with these',
-                      function_args, 'arguments')
-                print('Observation: ', eval(f'self.toolkit.{function_name}')(**function_args))
-                #reflect the changes made by the tools to the model, simulation, experiment and df.
+                action = 'Action: I should call ' + str(function_name) + ' function with these ' + str(function_args) + ' arguments.'
+                observation = 'Observation: ' + str(eval(f'self.toolkit.{function_name}')(**function_args))
+                print(action)
+                print(observation)
+                
+                #Reflect the changes made by the toolkit to the model, simulation, experiment and df.
                 self.df = self.toolkit.df
                 self.model = self.toolkit.model
                 self.simulation = self.toolkit.simulation
                 self.experiment = self.toolkit.experiment
-            #if message.content is not None then there is no function call and the executor agent has replied with a response
+                # update executor agent's chat history
+                # self.executor_agent.add_message({"role": "assistant", "content": thought})
+                # self.executor_agent.add_message({"role": "assistant", "content": action})
+                self.executor_agent.add_message({"role": "assistant", "content":observation})
+    
+            # If message.content is not None, executor agent has responded with a chat reply
             else:
                 print('Response: ', message.content)
+                return message.content
