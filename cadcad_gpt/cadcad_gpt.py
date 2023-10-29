@@ -61,13 +61,11 @@ class CadCAD_GPT:
         # If there are plans, they are printed and executed one by one
         print_color("Planner Agent:", "32")
         print('I have made a plan to follow:')
-        i=0
-        for plan in plan_list:
-            i+=1
-            print(plan,i)
+        
+        # print plan one by one along with its index
+        for i, plan in enumerate(plan_list):
+            print(f'Step {i+1} {plan}')
         print('\n')
-
-        print('plan_list: ', plan_list)
 
         # Clear old chat history of executor agent
         self.executor_agent.delete_all_messages()
@@ -77,14 +75,13 @@ class CadCAD_GPT:
             self.executor_agent.add_message({"role": "user", "content": plan})
 
             print_color("Executor Agent:", "31")
-            thought = 'Thought: My task is to ' + str(plan)
+            thought = f'Thought: My task is to {plan}'
             print(thought)
             
             #Send plan to executor agent
             message = self.executor_agent(plan).choices[0].message
-            # print(message)
 
-            # Else If message.content is None, executor agent has made a function call
+            # If message.content is None, executor agent has made a function call and we need to execute it
             if (message.content==None):
                 function_name = message['function_call']['name']
                 function_args = json.loads(message['function_call']['arguments'])
@@ -93,14 +90,12 @@ class CadCAD_GPT:
                 print(action)
                 print(observation)
                 
-                #Reflect the changes made by the toolkit to the model, simulation, experiment and df.
+                # Reflect the changes made by the toolkit to the model, simulation, experiment and df.
                 self.df = self.toolkit.df
                 self.model = self.toolkit.model
                 self.simulation = self.toolkit.simulation
                 self.experiment = self.toolkit.experiment
-                # update executor agent's chat history
-                # self.executor_agent.add_message({"role": "assistant", "content": thought})
-                # self.executor_agent.add_message({"role": "assistant", "content": action})
+                # update executor agent's chat history with the observation
                 self.executor_agent.add_message({"role": "assistant", "content":observation})
     
             # If message.content is not None, executor agent has responded with a chat reply

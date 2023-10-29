@@ -1,21 +1,25 @@
 def plan_parser(plan: str) -> list:
     """
     Splits the given plan from planner agent into multiple sub-plans using ``` as a delimiter.
-    
+
     Parameters:
     plan (str): Plan string which may contain ``` delimiter to break it into sub-plans.
 
     Returns:
     list: A list of sub-plans. Returns an empty list if no ``` delimiter is found.
     """
-    # Split plan into sub-plans using ``` as a delimiter
-    plans = plan.split('```')
-    #remove the '[' ']' symbols from all the elements
-    plans = [plan.replace('[', '').replace(']', '') for plan in plans]
-    #remove the extra spaces from all the elements
-    plans = [plan.strip() for plan in plans]
-    plan_list = plans[1].split(', ')
+
+    if '```' not in plan:
+        raise ValueError('No ``` delimiter found in plan. Please check the plan and try again.')
+
+    # Split plan into sub-plans using ``` as a delimiter and remove the first element (reasoning step)
+    plans = plan.split('```')[1]
+    # remove brackets and split into list
+    plans = plans.replace('\n','').replace('[','').replace(']','').split(',')
+    plan_list = [plan.strip() for plan in plans]
     return plan_list
+
+
 
 
 
