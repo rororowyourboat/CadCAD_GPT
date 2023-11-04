@@ -169,6 +169,19 @@ class Toolkit:
 
         """
         fig = px.line(self.df, x="timestep", y=[column_name])
+        # change figure size to somethign smaller
+        fig.update_layout(
+            autosize=False,
+            width=900,
+            height=300,
+            margin=dict(
+                l=50,
+                r=50,
+                b=50,
+                t=50,
+                pad=4
+            ),
+        )
         fig.show()
 
 

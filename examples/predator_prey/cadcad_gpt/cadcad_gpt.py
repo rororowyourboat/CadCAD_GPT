@@ -26,7 +26,7 @@ class CadCAD_GPT:
         self.df = pd.DataFrame(self.experiment.run())
 
         # Create a Toolkit object
-        self.toolkit = Toolkit(self.model, self.simulation, self.experiment, self.df)
+        self.toolkit = Toolkit(self.model, self.simulation, self.experiment, self.df, self.docs)
 
         # Extract function schema list from toolkit for subsequent agent usage
         self.function_schemas = self.toolkit.function_schemas
@@ -83,9 +83,13 @@ class CadCAD_GPT:
                 function_name = message['function_call']['name']
                 function_args = json.loads(message['function_call']['arguments'])
                 action = 'Action: I should call ' + str(function_name) + ' function with these ' + str(function_args) + ' arguments.'
-                observation = 'Observation: ' + str(eval(f'self.toolkit.{function_name}')(**function_args))
+                observation1 = 'Observation: ' 
+                observation2 = str(eval(f'self.toolkit.{function_name}')(**function_args))
+                observation = observation1 + observation2
                 print(action)
-                print(observation)
+                print(observation1)
+                print_color(observation2, "36")
+
                 
                 # Reflect the changes made by the toolkit to the model, simulation, experiment and df.
                 self.df = self.toolkit.df

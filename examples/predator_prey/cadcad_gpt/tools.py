@@ -28,13 +28,14 @@ class Toolkit:
         df (pandas.DataFrame): The dataframe to use for function execution.
 
     """
-    def __init__(self, model: Model, simulation: Simulation, experiment: Experiment, df: pd.DataFrame):
+    def __init__(self, model: Model, simulation: Simulation, experiment: Experiment, df: pd.DataFrame, docs: str):
         self.model = model
         self.simulation = simulation
         self.experiment = experiment
         self.df = df
         self.function_schemas = self.get_function_schemas()
         self.params = self.model.params
+        self.docs = docs
 
     
     def get_function_schemas(self) -> List[Dict[str, Union[str, Any]]]:
@@ -102,13 +103,13 @@ class Toolkit:
                 output= output +f'\n{param} is {self.simulation.model.params[param]}'
             return output
         elif param in self.simulation.model.params:
-            return {param: self.simulation.model.params[param]}
+            return f'{param} value is {self.simulation.model.params[param][0]}'
         else:
             return f'{param} is not a parameter of the model try choosing from {self.model.params.keys()}'
 
     # pandas agent as a tool
 
-    def analyze_dataframe(self, question: str) -> str:
+    def analysis_agent(self, question: str) -> str:
         """
         Analyzes the dataframe and returns the answer to the question.
 
@@ -169,6 +170,19 @@ class Toolkit:
 
         """
         fig = px.line(self.df, x="timestep", y=[column_name])
+        # change figure size to somethign smaller
+        fig.update_layout(
+            autosize=False,
+            width=900,
+            height=300,
+            margin=dict(
+                l=50,
+                r=50,
+                b=50,
+                t=50,
+                pad=4
+            ),
+        )
         fig.show()
 
 
