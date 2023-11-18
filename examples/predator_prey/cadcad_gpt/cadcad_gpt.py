@@ -57,7 +57,7 @@ class CadCAD_GPT:
             return reply
 
         # If there are plans, they are printed and executed one by one
-        print_color("Planner Agent:", "32")
+        print_color("Planner Agent:", "35")
         print('I have made a plan to follow:')
         # print plan one by one along with its index
         for i, plan in enumerate(plan_list):
@@ -71,7 +71,7 @@ class CadCAD_GPT:
         for plan in plan_list:
             self.executor_agent.add_message({"role": "user", "content": plan})
 
-            print_color("Executor Agent:", "31")
+            print_color("Executor Agent:", "36")
             thought = f'Thought: My task is to {plan}'
             print(thought)
             
@@ -89,8 +89,10 @@ class CadCAD_GPT:
                 observation = observation1 + observation2
 
                 print(observation1)
-                print_color(observation2, "36")
-
+                if plan == plan_list[-1]:
+                    print_color(observation2, "33")
+                else: 
+                    print_color(observation2, "32")
                 
                 # Reflect the changes made by the toolkit to the model, simulation, experiment and df.
                 self.df = self.toolkit.df
