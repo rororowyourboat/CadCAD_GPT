@@ -1,6 +1,6 @@
 from typing import List, Dict
 from radcad import Experiment, Model, Simulation
-from .utils import plan_parser, color
+from .utils import plan_parser, print_wrapped
 from .agents import PlannerAgent, ExecutorAgent
 from .tools import Toolkit
 import json
@@ -75,7 +75,7 @@ class CadCAD_GPT:
 
             print(Fore.MAGENTA + Style.BRIGHT + "Executor Agent:" + Style.RESET_ALL)
             thought = f'My task is to {plan}'
-            print(Fore.BLUE + "Thought: " + Style.RESET_ALL + thought)
+            print(Fore.BLUE + Style.BRIGHT + "Thought: " + Style.RESET_ALL + thought)
             
             #Send plan to executor agent
             message = self.executor_agent(plan)
@@ -84,14 +84,14 @@ class CadCAD_GPT:
             if (message.content==None):
                 function_name = message['function_call']['name']
                 function_args = json.loads(message['function_call']['arguments'])
-                action = 'I should call ' + Fore.CYAN + str(function_name) + Style.RESET_ALL + ' function with these ' + Fore.CYAN + str(function_args) + Style.RESET_ALL + ' arguments.'
-                print(Fore.BLUE + "Action: " + Style.RESET_ALL + action)
+                action = 'I should call ' + Fore.CYAN + str(function_name) + Style.RESET_ALL + ' function with these ' + Fore.CYAN + str(function_args) + Style.RESET_ALL + ' arguments.' 
+                print(print_wrapped(Fore.BLUE + Style.BRIGHT + "Action: " + Style.RESET_ALL + action))
                 observation = str(eval(f'self.toolkit.{function_name}')(**function_args))
 
                 if plan == plan_list[-1]:
-                    print(Fore.BLUE + "Observation: " + Style.RESET_ALL + Fore.CYAN + Style.BRIGHT + "\033[4m" + observation + Style.RESET_ALL)
+                    print(Fore.BLUE + Style.BRIGHT + "Observation: " + Style.RESET_ALL + Fore.CYAN + Style.BRIGHT + "\033[4m" + observation + Style.RESET_ALL)
                 else: 
-                    print(Fore.BLUE + "Observation: " + Style.RESET_ALL + Fore.CYAN + observation + Style.RESET_ALL)
+                    print(Fore.WHITE + Style.BRIGHT + "Observation: " + Style.RESET_ALL + Fore.CYAN + observation + Style.RESET_ALL)
 
                 
                 # Reflect the changes made by the toolkit to the model, simulation, experiment and df.

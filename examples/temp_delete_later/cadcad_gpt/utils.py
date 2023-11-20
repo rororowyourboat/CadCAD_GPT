@@ -1,3 +1,4 @@
+import textwrap
 def plan_parser(plan: str) -> list:
     """
     Splits the given plan from planner agent into multiple sub-plans using ``` as a delimiter.
@@ -17,6 +18,11 @@ def plan_parser(plan: str) -> list:
     plans = plans.replace('\n','').replace('[','').replace(']','').replace('python','').split(',')
     plan_list = [plan.strip() for plan in plans]
     return plan_list
+
+
+
+def print_wrapped(text, width=120):
+    return '\n'.join(textwrap.wrap(text, width))
 
 
 
@@ -52,7 +58,10 @@ def color(text: str, style: str) -> str:
         'magenta_underline': '\033[4;35m',
         'yellow_bold': '\033[1;33m',
         'yellow_underline': '\033[4;33m',
-        'white': '\033[0m'
+        'white': '\033[0m',
+        'orange': '\033[38;5;208m',
+        'orange_bold': '\033[1;38;5;208m',
+
     }
 
     if style not in styles:
