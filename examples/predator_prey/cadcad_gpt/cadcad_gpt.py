@@ -80,8 +80,8 @@ class CadCAD_GPT:
 
             # If message.content is None, executor agent has made a function call and we need to execute it
             if (message.content==None):
-                function_name = message['function_call']['name']
-                function_args = json.loads(message['function_call']['arguments'])
+                function_name = message.function_call.name
+                function_args = json.loads(message.function_call.arguments)
                 action = 'Action: I should call ' + str(function_name) + ' function with these ' + str(function_args) + ' arguments.'
                 print(action)
                 observation1 = 'Observation: ' 

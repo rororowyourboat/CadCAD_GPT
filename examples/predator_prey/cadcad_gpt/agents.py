@@ -13,7 +13,7 @@ class PlannerAgent:
         self.function_name_descriptions = function_name_descriptions
         self.api_key = api_key
 
-    def __call__(self, prompt: str) -> openai.openai_object.OpenAIObject:
+    def __call__(self, prompt: str) -> str:
         """
         Takes in user query and returns an OpenAIObject which has the steps to take to achieve the goal in the user query.
 
@@ -23,7 +23,7 @@ class PlannerAgent:
         Returns:
         openai.openai_object.OpenAIObject: A OpenAIObject object from OpenAI API call
         """
-        completion = openai.ChatCompletion.create(
+        completion = openai.chat.completions.create(
             model="gpt-4-1106-preview",
             # max_tokens=100,
         messages=[
@@ -84,7 +84,7 @@ class ExecutorAgent:
                 ],
         
 
-    def __call__(self, prompt: str) -> openai.openai_object.OpenAIObject:
+    def __call__(self, prompt: str) -> str:
         """
         Converts the plan to a OpenAIObject which will have function calling instructions.
 
@@ -95,7 +95,7 @@ class ExecutorAgent:
         openai.openai_object.OpenAIObject: A OpenAIObject object from OpenAI API call
         """
         
-        completion = openai.ChatCompletion.create(
+        completion = openai.chat.completions.create(
             model="gpt-3.5-turbo-0613",
             messages=self.messages[0],
                 

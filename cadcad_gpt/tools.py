@@ -15,6 +15,7 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
+import openai
 
 
 class Toolkit:
@@ -157,32 +158,41 @@ class Toolkit:
 
         return info
 
-    def plotter(self, column_name: str) -> None:
+    def plotter(self, natural_language_request: str) -> None:
         """
-        Plots the column from the dataframe.
+        Plots any visualizations .
 
         Args:
-            column_name (str): The name of the column to plot.
+            natural_language_request (str): A natural language request for a plot with details about pkot congifurations. 
 
         Returns:
             None: The plot is displayed using the `fig.show()` function.
 
         """
-        fig = px.line(self.df, x="timestep", y=[column_name])
-        # change figure size to somethign smaller
-        fig.update_layout(
-            autosize=False,
-            width=900,
-            height=300,
-            margin=dict(
-                l=50,
-                r=50,
-                b=50,
-                t=50,
-                pad=4
-            ),
-        )
-        fig.show()
+        df = self.df
+        systemprompt = '''You are a plotly express data visualization expert. You will take a request from user and write back the python code to generate the plotly express visualization. The dataframe user is working with is df. and it has the following columns: timestep, predator_population, prey_population. Only output the python output enclosed in ``` backticks.'''
+        completion = openai.chat.completions.create(
+                model="gpt-4-1106-preview",
+                max_tokens=500,
+                messages=[
+                    {
+                    "role": "system",
+                    "content": f"{systemprompt}"
+                    },
+                    {
+                    "role": "user",
+                    "content": f"{natural_language_request}"
+                    }
+                ],
+                temperature=0,
+                top_p=0.5,
+            )
+        answer = completion.choices[0].message.content
+        code_to_run = answer.split('```')[1].replace('python', '')
+        if 'plotly' in code_to_run:
+            exec(code_to_run)
+
+        return None
 
 
         
