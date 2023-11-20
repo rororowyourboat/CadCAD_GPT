@@ -24,7 +24,7 @@ class PlannerAgent:
         openai.openai_object.OpenAIObject: A OpenAIObject object from OpenAI API call
         """
         completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
+            model="gpt-4-1106-preview",
             # max_tokens=100,
         messages=[
             {
